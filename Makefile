@@ -8,13 +8,13 @@ $(CAM_TYPES):
 	$(MAKE) -C pco_$@_camera/pco_$@ libpcocam
 
 bin: FORCE
-	@mkdir -p bin
+	@mkdir -m 755 -p bin
 	ln -sf $(shell pwd)/pco_clhs_camera/pco_clhs/bin/pco_clhs_mgr bin/pco_clhs_mgr
 	ln -sf $(shell pwd)/pco_clhs_camera/pco_clhs/bin/pco_clhs_svc bin/pco_clhs_svc
 	ln -sf $(shell pwd)/pco_clhs_camera/pco_clhs/bin/pco_clhs_info bin/pco_clhs_info
 
 lib: $(CAM_TYPES) FORCE
-	@mkdir -p lib
+	@mkdir -m 755 -p lib
 	@find $(shell pwd)/pco_me4_camera/ -name "*.so" -exec ln -sf {} lib/ \;
 	@find $(shell pwd)/pco_usb_pl_camera/ -name "*.so" -exec ln -sf {} lib/ \;
 	@find $(shell pwd)/pco_clhs_camera/ -name "*.so" -exec ln -sf {} lib/ \;
