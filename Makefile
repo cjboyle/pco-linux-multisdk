@@ -15,9 +15,9 @@ bin: FORCE
 
 lib: $(CAM_TYPES) FORCE
 	@mkdir -m 755 -p lib
-	@find $(shell pwd)/pco_me4_camera/ -name "*.so" -exec ln -sf {} lib/ \;
-	@find $(shell pwd)/pco_usb_pl_camera/ -name "*.so" -exec ln -sf {} lib/ \;
-	@find $(shell pwd)/pco_clhs_camera/ -name "*.so" -exec ln -sf {} lib/ \;
+	@find $(shell pwd)/pco_me4_camera/ -name "*.so*" -exec ln -sf {} lib/ \;
+	@find $(shell pwd)/pco_usb_pl_camera/ -name "*.so*" -exec ln -sf {} lib/ \;
+	@find $(shell pwd)/pco_clhs_camera/ -name "*.so*" -exec ln -sf {} lib/ \;
 	@find $(shell pwd)/pco_me4_camera/ -name "*.a" -exec ln -sf {} lib/ \;
 	@find $(shell pwd)/pco_usb_pl_camera/ -name "*.a" -exec ln -sf {} lib/ \;
 	@find $(shell pwd)/pco_clhs_camera/ -name "*.a" -exec ln -sf {} lib/ \;
@@ -29,10 +29,10 @@ clean: FORCE
 install: install-bin install-lib install-service install-env FORCE
 
 install-bin: bin FORCE
-	@find $(shell pwd)/bin/ -exec ln -sf {} /usr/local/bin \;
+	@find $(shell pwd)/bin/* -exec ln -sf {} /usr/local/bin \;
 
 install-lib: lib FORCE
-	@find $(shell pwd)/lib/ -exec ln -sf {} /usr/local/lib \;
+	@find $(shell pwd)/lib/* -exec ln -sf {} /usr/local/lib \;
 
 install-service: pcoclhs.service FORCE
 	install -m 644 $< /etc/systemd/system
