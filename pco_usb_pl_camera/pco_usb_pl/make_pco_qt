@@ -1,0 +1,120 @@
+#!/bin/bash
+#
+if [ "$1" == "-h" ]; then
+ echo "usage:"
+ echo "make_pco_qt -h -v -m [ path ]"
+ echo "-v get version of QT required version is: 5.5.0"
+ echo "-m call qmake for pco qt project and make to build application"
+ echo "[ path ] bin directory of QT version to use"
+ echo "-h this info"
+ exit
+fi
+
+QTBINDIR=""
+QT_QMAKE="" 
+
+CURDIR=`pwd`
+echo "current directory is \"$CURDIR\""
+
+DEV1=`echo ${CURDIR##*/}`
+#echo "current dev1 \"$DEV1\""
+DEVM=`echo ${DEV1#*_}`
+#echo "current devm \"$DEVM\""
+DEVE=`echo ${DEV1##*_}`
+#echo "current deve \"$DEVE\""
+
+if [ "$DEVM" == "$DEVE" ] ; then
+ DEV=$DEVM
+# echo "use devm \"$DEV\""
+else
+ DEV=`echo ${DEVM%%_*}`
+# echo "use stripped devm \"$DEV\""
+fi
+echo "current DEV is \"$DEV\""
+
+
+if [ "$2x" == "x" ] ; then
+ echo "use standard pathes to invoke QT qmake"
+ QT_QMAKE=qmake
+else
+ QTBINDIR=$2
+ if [ ! -e $QTBINDIR/qmake ] ; then
+  echo "QT qmake does not exist in directory $QTBINDIR, -h for more information"
+  exit 
+ fi 
+ echo "use $QTBINDIR/qmake"
+ QT_QMAKE=$QTBINDIR/qmake
+fi
+
+# echo "call $QT_QMAKE -v"
+
+QTVERSG=`$QT_QMAKE -v | grep "Qt version"`
+# echo "found line \"$QTVERSG\""
+
+QTVERSR=`echo ${QTVERSG##*version}`
+# echo "found line rechts \"$QTVERSR\""
+
+QTVERS=`echo ${QTVERSR:0:5}`
+# echo "found version \"$QTVERS\""
+
+QTVERS_MA=`echo ${QTVERS:0:1}`
+QTVERS_MI=`echo ${QTVERS:2:1}`
+QTVERS_SU=`echo ${QTVERS:4:1}`
+#echo "found version \"$QTVERS_MA\" und \"$QTVERS_MI\" und \"$QTVERS_SU\""
+
+if [ "$1" == "-v" ] ; then
+ echo "found QT version $QTVERS"
+ exit 
+fi
+
+ if [ $QTVERS_MA -lt 5 ] ; then
+  echo "QT version $QTVERS smaller than required version 5.5.0"
+  exit 
+ fi 
+
+ if [ $QTVERS_MI -lt 5 ] ; then
+  echo "QT version $QTVERS smaller than required version 5.5.0"
+  exit 
+ fi 
+
+if [ "$1" == "-c" ] ; then
+ cd ./qt_pco_camera_$DEV
+ if [ -e Makefile ] ; then
+  make clean
+  rmdir -p GeneratedFiles/moc
+  rmdir objects
+  rm Makefile
+ else
+  echo "Already cleared" 
+ fi
+ cd ..
+fi
+
+if [ "$1" == "-m" ] ; then
+ if [ -e ./bin/qt_* ] ; then
+  rm ./bin/qt_*
+ fi 
+ cd ./qt_pco_camera_$DEV
+ if [ -e Makefile ] ; then
+  rm Makefile
+ fi
+ ls
+ echo "call $QT_QMAKE -o Makefile qt_pco_camera_$DEV.pro"
+ RET=`$QT_QMAKE -o Makefile qt_pco_camera_$DEV.pro`
+ echo "qmake done and returned $RET"
+ echo "call make clean"
+ make clean 
+ echo "call make"
+ make
+ if [ $? -eq 0 ] ; then
+  echo "make successfully done new file is:"
+  ls -go ../bin/qt_*
+ else
+  echo "make failed"
+ fi
+ cd ..
+fi
+cd $CURDIR 
+
+
+
