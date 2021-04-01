@@ -1,6 +1,6 @@
 #!/bin/bash
 
-if [ -z "$PCODIR"]; then
+if [ -z "$PCODIR" ]; then
     export PCODIR="/opt/PCO"
 fi
 
