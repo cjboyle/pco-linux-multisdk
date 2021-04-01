@@ -9,3 +9,5 @@ else
     rsync -a $SRCDIR/* $PCODIR
     make -C $PCODIR clean all install
 fi
+
+chmod -R a+rx $PCODIR
