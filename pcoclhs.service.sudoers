@@ -1,0 +1,7 @@
+%BMIT_grp, boylec0, bmituser1, bmituser2        ALL= NOPASSWD: /usr/bin/systemctl start pcoclhs
+%BMIT_grp, boylec0, bmituser1, bmituser2        ALL= NOPASSWD: /usr/bin/systemctl stop pcoclhs
+%BMIT_grp, boylec0, bmituser1, bmituser2        ALL= NOPASSWD: /usr/bin/systemctl start pcoclhs
+%BMIT_grp, boylec0, bmituser1, bmituser2        ALL= NOPASSWD: /usr/bin/systemctl stop pcoclhs
+%BMIT_grp, boylec0, bmituser1, bmituser2        ALL= NOPASSWD: /usr/bin/systemctl restart pcoclhs
+%BMIT_grp, boylec0, bmituser1, bmituser2        ALL= NOPASSWD: /usr/bin/systemctl status pcoclhs
+%BMIT_grp, boylec0, bmituser1, bmituser2        ALL= NOPASSWD: /usr/bin/systemctl is-active pcoclhs

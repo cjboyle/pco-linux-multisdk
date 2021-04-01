@@ -34,6 +34,7 @@ install-lib: lib FORCE
 
 install-service: pcoclhs.service FORCE
 	install -m 644 $< /etc/systemd/system
+	install -m 644 -T $<.sudoers /etc/sudoers.d/BMIT_grp
 
 install-env: setup-pco-env.sh
 	install -m 644 $< /etc/profile.d
