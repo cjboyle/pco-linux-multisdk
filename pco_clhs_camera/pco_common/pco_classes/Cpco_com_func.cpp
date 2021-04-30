@@ -1311,7 +1311,7 @@ DWORD CPco_com::PCO_SetRecorderSubmode(WORD wRecSubmode)
     SC2_Recorder_Submode_Response resp;
     DWORD err=PCO_NOERROR;
 
-    com.wCode=GET_RECORDER_SUBMODE;
+    com.wCode=SET_RECORDER_SUBMODE;
     com.wMode=wRecSubmode;
     com.wSize=sizeof(com);
 

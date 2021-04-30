@@ -118,6 +118,8 @@ int main(int argc, char* argv[])
   WORD exp_timebase,del_timebase;
   DWORD width,height,secs,nsecs;
   WORD triggermode;
+  WORD binhorz,binvert;   
+  WORD wRoiX0, wRoiY0, wRoiX1, wRoiY1;
   SC2_Camera_Description_Response description;
   double freq;
   SHORT ccdtemp,camtemp,pstemp;
@@ -354,6 +356,18 @@ int main(int argc, char* argv[])
   else
    printf("actual Triggermode: %d %s\n",triggermode,tmode[triggermode]);
 
+  err=camera->PCO_GetBinning(&binhorz,&binvert);
+  if(err!=PCO_NOERROR)
+   printf("PCO_GetBinning() Error 0x%x\n",err);
+  else
+   printf("actual Binning: %dx%d\n",binhorz,binvert);
+  
+  err=camera->PCO_GetROI(&wRoiX0, &wRoiY0, &wRoiX1, &wRoiY1);
+  if(err!=PCO_NOERROR)
+   printf("PCO_GetROI() Error 0x%x\n",err);
+  else
+   printf("actual ROI: %d-%d, %d-%d\n",wRoiX0,wRoiX1,wRoiY0,wRoiY1);
+
 
   err=camera->PCO_GetActualSize(&width,&height);
   if(err!=PCO_NOERROR)
@@ -401,6 +415,7 @@ int main(int argc, char* argv[])
    printf("d to set delay time              delaytime       %d%s\n",delay_time,tb[del_timebase]);
    printf("p to set camera pixelrate        pixelrate       %dHz\n",pixelrate);
    printf("a to set triggermode             triggermode     %s\n",tmode[triggermode]);
+   printf("b to set binning                 binning         %dx%d\n",binhorz,binvert);
    printf("\n");
    printf("0 to set recording state to OFF\n");
    printf("1 to set recording state to ON\n");
@@ -589,6 +604,140 @@ int main(int argc, char* argv[])
      if(act_recstate==1)
       camera->PCO_SetRecordingState(1);
     }
+   }
+   else if(c=='b')
+   {
+    WORD new_binhorz,new_binvert;
+    WORD new_wRoiX0, new_wRoiY0, new_wRoiX1, new_wRoiY1;
+    
+    new_binhorz=binhorz;
+    new_binvert=binvert;
+
+    
+    printf("enter new horizontal binning ...<CR>: ");
+    get_number(number,2);
+    if(strlen(number))
+     new_binhorz=(WORD)atoi(number);
+    printf("enter new vertical binning ...<CR>: ");
+    get_number(number,2);
+    if(strlen(number))
+     new_binvert=(WORD)atoi(number);
+    
+    if(description.wBinHorzSteppingDESC==1) //linear
+    {
+     int i;   
+     for(i = 1; i < description.wMaxBinHorzDESC; i++)
+     {
+      if(i==new_binhorz)
+       break;   
+     }
+     if(i!=new_binhorz)
+     {
+      new_binhorz=binhorz;   
+      printf("wrong input use horizontal binning %d\n",new_binhorz); 
+     }
+    }
+    else //binary 0 or 2
+    {
+     int i;   
+     for(i = 1; i < description.wMaxBinHorzDESC; i <<= 1 )
+     {
+      if(i==new_binhorz)
+       break;   
+     }
+     if(i!=new_binhorz)
+     {
+      new_binhorz=binhorz;   
+      printf("wrong input use horizontal binning %d\n",new_binhorz); 
+     }
+    }
+    
+    if(description.wBinVertSteppingDESC==1) //linear
+    {
+     int i;   
+     for(i = 1; i < description.wMaxBinVertDESC; i++)
+     {
+      if(i==new_binvert)
+       break;   
+     }
+     if(i!=new_binvert)
+     {
+      new_binvert=binvert;   
+      printf("wrong input use vertical binning %d\n",new_binvert); 
+     }
+    }
+    else //binary 0 or 2
+    {
+     int i;   
+     for(i = 1; i < description.wMaxBinVertDESC; i <<= 1 )
+     {
+      if(i==new_binvert)
+       break;   
+     }
+     if(i!=new_binvert)
+     {
+      new_binvert=binvert;
+      printf("wrong input use vertical binning %d\n",new_binvert); 
+     }
+    }
+    
+    if((new_binhorz!=binhorz)||(new_binvert!=binvert))
+    {
+     if(act_recstate==1)
+      camera->PCO_SetRecordingState(0);
+     
+     camera->PCO_GetROI(&wRoiX0,&wRoiY0,&wRoiX1,&wRoiY1);
+     new_wRoiX0=wRoiX0;
+     new_wRoiY0=wRoiY0;
+     new_wRoiX1=wRoiX1;
+     new_wRoiY1=wRoiY1;
+     
+     err=camera->PCO_SetBinning(new_binhorz,new_binvert);
+     printf("Set binning %dx%d returned 0x%x\n",new_binhorz,new_binvert,err);
+
+     if((description.wMaxHorzResStdDESC/new_binhorz)!=(wRoiX1-wRoiX0))
+     {
+      new_wRoiX0 = 1;
+      new_wRoiX1 = description.wMaxHorzResStdDESC/new_binhorz;
+     }
+     if((description.wMaxVertResStdDESC/new_binvert)!=(wRoiY1-wRoiY0))
+     {
+      new_wRoiY0 = 1;
+      new_wRoiY1 = description.wMaxVertResStdDESC/new_binvert;
+     }
+     err=camera->PCO_SetROI(new_wRoiX0, new_wRoiY0, new_wRoiX1, new_wRoiY1);
+     printf("Set ROI %d-%d %d-%d returned 0x%x\n",new_wRoiX0, new_wRoiX1, new_wRoiY0, new_wRoiY1,err);
+     
+     err=camera->PCO_ArmCamera();
+     if(err!=PCO_NOERROR)
+     {
+      printf("PCO_ArmCamera() Error 0x%x\n",err);
+      printf("Set old values\n");
+      camera->PCO_SetBinning(binhorz,binvert);
+      camera->PCO_SetROI(wRoiX0,wRoiY0,wRoiX1,wRoiY1);
+      err=camera->PCO_ArmCamera();
+     }
+
+     camera->PCO_GetBinning(&binhorz,&binvert);
+     camera->PCO_GetROI(&wRoiX0,&wRoiY0,&wRoiX1,&wRoiY1);
+     
+     err=camera->PCO_GetActualSize(&width,&height);
+     if(err!=PCO_NOERROR)
+      printf("PCO_GetActualSize() Error 0x%x\n",err);
+
+     printf("Actual Resolution %d x %d\n",width,height);
+
+     err=grabber->PostArm();
+     if(err!=PCO_NOERROR)
+      printf("grabber->PostArm() Error 0x%x\n",err);
+     
+     
+     if(act_recstate==1)
+      camera->PCO_SetRecordingState(1);
+     
+     
+    }
+
    }
    else if(c=='0')
    {
@@ -952,6 +1101,7 @@ DWORD grab_count_wait(CPco_grab_clhs* grabber,int count)
  unsigned int w,h,bp;
  WORD *picbuf[BUFNUM];
  double tim,freq;
+ int c;
 
  picnum=1;
  err=grabber->Get_actual_size(&w,&h,&bp);
@@ -1025,6 +1175,7 @@ DWORD grab_count_wait(CPco_grab_clhs* grabber,int count)
    fflush(stdout);
   }
  }
+  
  i--;
  tim=mylog.stop_time_mess();
  freq=i*1000;
