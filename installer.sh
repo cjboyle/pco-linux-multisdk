@@ -6,7 +6,7 @@ PCODIR="/opt/PCO"
 if [[ $SRCDIR = $PCODIR ]]; then
     make -C $PCODIR clean all install
 else
-    rsync -a $SRCDIR/* $PCODIR
+    scp -r $SRCDIR/* $PCODIR
     make -C $PCODIR clean all install
 fi
 

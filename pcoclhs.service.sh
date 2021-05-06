@@ -19,4 +19,13 @@ else
     source "${PCO_DIR}/setup-pco-env.sh"
 fi
 
+permit_shm_access() {
+    sleep 0.1
+	while [[ ! -f /dev/shm/PCO_CLHS_DC_MEM ]]; do sleep 0.1; done
+	chown root:video /dev/shm/PCO_CLHS_DC_MEM
+	chmod 666 /dev/shm/PCO_CLHS_DC_MEM
+}
+
+permit_shm_access &
+
 $CMD

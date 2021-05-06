@@ -1,11 +1,12 @@
 
 CAM_TYPES = clhs me4 usb_pl
 
-.PHONY: all $(CAM_TYPES) bin lib service clean
+.PHONY: all $(CAM_TYPES) bin lib clean install install-*
 all: bin lib
 
 $(CAM_TYPES):
 	$(MAKE) -C pco_$@_camera/pco_$@ libpcocam
+	@chmod -R 755 pco_$@_camera/*
 
 bin: FORCE
 	@mkdir -m 755 -p bin
@@ -34,9 +35,9 @@ install-bin: bin FORCE
 install-lib: lib FORCE
 	@find $(shell pwd)/lib/* -exec ln -sf {} /usr/local/lib \;
 
-install-service: pcoclhs.service FORCE
-	install -m 644 $< /etc/systemd/system
-	install -m 644 -T $<.sudoers /etc/sudoers.d/BMIT_grp
+install-service: FORCE
+	install -m 644 pcoclhs.service /etc/systemd/system
+	install -m 644 -T pcoclhs.service.sudoers /etc/sudoers.d/BMIT_grp
 
 install-env: setup-pco-env.sh
 	install -m 644 $< /etc/profile.d
