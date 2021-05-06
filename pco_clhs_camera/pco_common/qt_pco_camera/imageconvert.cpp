@@ -47,159 +47,93 @@
 #include "imageconvert.h"
 
 
-#ifdef NOPCOCNVLIB
-void lincnv_convert_set(BWLUT *lut,int convertmin,int convertmax)
-{
-  unsigned char *linlut=(unsigned char*)lut->ptr;
-
-  double step=convertmax-convertmin;
-  double w=convertmin;
-  int v=0;
-
-  if(convertmax>lut->size-1)
-   convertmax=lut->size-1;
-
-  step=step/(lut->max_out+1);
-  lut->min=convertmin;
-  lut->max=convertmax;
-
-  memset(lut->ptr,0,lut->size);
-
-  for(int i=convertmin;i<convertmax;i++)
-  {
-   while(w<i+1)
-   {
-    w=w+step;
-    v++;
-    if(v==(lut->max_out-lut->min_out+1)/2)
-     lut->mid=i;
-   }
-   if(v>lut->max_out)
-    v=lut->max_out;
-   *(linlut+i)=v;
-  }
-  for(int i=convertmax;i<lut->size;i++)
-   *(linlut+i)=lut->max_out;
-
-}
-#endif
-
-
-
-
 ImageConvert::ImageConvert(BWLUT* lut, int* botvalue, int* topvalue, double* gamma, QWidget *parent)
     : QDialog(parent)
 {
-  setupUi(this);
-  blackpen = new QPen(Qt::black);
+    setupUi(this);
+    blackpen = new QPen(Qt::black);
 
-  this->topvalue = topvalue;
-  this->botvalue = botvalue;
-  this->gamma = gamma;
+    this->topvalue = topvalue;
+    this->botvalue = botvalue;
+    this->gamma = gamma;
 
-//create scene
-  convertscene = new QGraphicsScene(0,0,CONVERT_WIDTH,CONVERT_HEIGHT);
-  ConvertGraphicsView->scale(1, -1);
+    //create scene
+    convertscene = new QGraphicsScene(0,0,CONVERT_WIDTH,CONVERT_HEIGHT);
+    ConvertGraphicsView->scale(1, -1);
 
-  if (lut == NULL)
-  {
-    ErrorPopup *error = new ErrorPopup;
-    error->setModal(true);
-    QString errortext = "No LUT found.";
-    error->ErrorPopupText->setText(errortext);
-    error->exec();
-  }
-  else
-   this->lut = lut;
+    if (lut == NULL) {
+      ErrorPopup *error = new ErrorPopup;
+      error->setModal(true);
+      QString errortext = "No LUT found.";
+      error->ErrorPopupText->setText(errortext);
+      error->exec();
+    }
+    else
+      this->lut = lut;
 
-  blackpen->setWidth(650);
+    blackpen->setWidth(650);
 
-  DrawScene();
+    DrawScene();
 
-  ConvertGraphicsView->setBaseSize(convertscene->height(), convertscene->width());
-  ConvertGraphicsView->setSceneRect(convertscene->sceneRect());
-  ConvertGraphicsView->ensureVisible(convertscene->sceneRect());
-  ConvertGraphicsView->setScene(convertscene);
-  ConvertGraphicsView->fitInView(convertscene->sceneRect(), Qt::IgnoreAspectRatio);
-  ConvertGraphicsView->adjustSize();
-  ConvertGraphicsView->setRenderHint(QPainter::Antialiasing,true);
+    ConvertGraphicsView->setBaseSize(convertscene->height(), convertscene->width());
+    ConvertGraphicsView->setSceneRect(convertscene->sceneRect());
+    ConvertGraphicsView->ensureVisible(convertscene->sceneRect());
+    ConvertGraphicsView->setScene(convertscene);
+    ConvertGraphicsView->fitInView(convertscene->sceneRect(), Qt::IgnoreAspectRatio);
+    ConvertGraphicsView->adjustSize();
+    ConvertGraphicsView->setRenderHint(QPainter::Antialiasing,true);
 
-  TopValueBox->setValue(*topvalue);
-  BottomValueBox->setValue(*botvalue);
-  GammaDoubleBox->setValue(*gamma);
+    TopValueBox->setValue(*topvalue);
+    BottomValueBox->setValue(*botvalue);
+    GammaDoubleBox->setValue(*gamma);
+
 
 }
 
 ImageConvert::~ImageConvert()
 {
-  delete blackpen;
+    delete blackpen;
 }
 
-void ImageConvert::on_TopValueBox_valueChanged(int value)
-{
-//top value < bot value
-  if (value > *botvalue)
-  {
-   *topvalue = value;
+void ImageConvert::on_TopValueBox_valueChanged(int value) {
+  //top value < bot value
+  if (value > *botvalue) {
+    *topvalue = value;
   }
-  else
-  {
-   *topvalue = *botvalue+1; // cap at botvalue
-   TopValueBox->setValue(*topvalue);
-  }
-
-  if(*topvalue>lut->size-1)
-  {
-   *topvalue = lut->size-1; // cap at botvalue
-   TopValueBox->setValue(*topvalue);
+  else {
+    *topvalue = *botvalue; // cap at botvalue
+    TopValueBox->setValue(*topvalue);
   }
   DrawScene();
 }
 
 
-void ImageConvert::on_BottomValueBox_valueChanged(int value)
-{
+void ImageConvert::on_BottomValueBox_valueChanged(int value) {
   //bot value > top value AND invert checked
-  if (value < *topvalue)
-  {
-   *botvalue = value;
+  if (value < *topvalue) {
+    *botvalue = value;
   }
-  else
-  {
-   *botvalue = *topvalue-1; // cap at botvalue
-   if(*botvalue<0)
-    *botvalue=0;
-   BottomValueBox->setValue(*botvalue);
+  else {
+    *botvalue = *topvalue; // cap at botvalue
+    BottomValueBox->setValue(*botvalue);
   }
   DrawScene();
 }
 
-
-void ImageConvert::on_GammaDoubleBox_valueChanged(double value)
-{
+void ImageConvert::on_GammaDoubleBox_valueChanged(double value) {
   *gamma = value;
-#ifdef NOPCOCNVLIB
-  *gamma = 1; //only linear lut
-#endif
   DrawScene();
 }
 
-void ImageConvert::updateValues(int min,int max)
-{
-  *topvalue = max;
-  *botvalue = min;
-  BottomValueBox->setValue(*botvalue);
-  TopValueBox->setValue(*topvalue);
+void ImageConvert::updateValues(int min,int max) {
+    *topvalue = max;
+    *botvalue = min;
+    BottomValueBox->setValue(*botvalue);
+    TopValueBox->setValue(*topvalue);
 }
 
-void ImageConvert::updateMainWindow()
-{
-#ifndef NOPCOCNVLIB
+void ImageConvert::updateMainWindow() {
   pcocnv_convert_set_ex(lut, *botvalue, *topvalue, 1, *gamma);
-#else
-  lincnv_convert_set(lut, *botvalue, *topvalue);
-#endif
-
   //emit changed signal
   emit ConversionChanged();
 }
@@ -210,38 +144,30 @@ void ImageConvert::showEvent(QShowEvent * event)
   QWidget::showEvent(event);
 }
 
-void ImageConvert::DrawScene()
-{
-  updateMainWindow();
-  convertscene->clear();
-  path = QPainterPath();
-//move to start
-  path.moveTo(0, 0);
-
-//draw middle curve from LUT
-  void* pointer = lut->ptr;
-  unsigned int lastvalue = (*(static_cast<quint8*>(pointer)))*256;
-  for(int i = 0; i < lut->size;i++)
-  {
-   unsigned int value = (*(static_cast<quint8*>(pointer)+i))*256;
-   if(value != lastvalue)
-   {
-      //only draw if something changed
-    path.lineTo(i-1, lastvalue); //draw line to last unchanged point
-    path.lineTo(i, value); //draw line to changed point
-   }
-   lastvalue = value;
-  }
+void ImageConvert::DrawScene() {
+    updateMainWindow();
+    convertscene->clear();
+    path = QPainterPath();
+    //move to start
+    path.moveTo(0, 0);
+    //draw middle curve from LUT
+    void* pointer = lut->ptr;
+    unsigned int lastvalue = (*(static_cast<quint8*>(pointer)))*256;
+    for(int i = 0; i < lut->size;i++) {
+        unsigned int value = (*(static_cast<quint8*>(pointer)+i))*256;
+            if(value != lastvalue) {
+                //only draw if something changed
+                 path.lineTo(i-1, lastvalue); //draw line to last unchanged point
+                 path.lineTo(i, value); //draw line to changed point
+            }
+            lastvalue = value;
+    }
     //close out path
-  path.lineTo(CONVERT_WIDTH, CONVERT_HEIGHT-256);
+    path.lineTo(CONVERT_WIDTH, CONVERT_HEIGHT);
 
-  convertscene->addPath(path, *blackpen);
+    convertscene->addPath(path, *blackpen);
 
-  convertscene->addRect(lut->mid-(MID_VALUE_RECTANGLE_SIZE/2),(CONVERT_HEIGHT/2)-(MID_VALUE_RECTANGLE_SIZE/2),
-                        MID_VALUE_RECTANGLE_SIZE,MID_VALUE_RECTANGLE_SIZE,QPen(Qt::red),QBrush(Qt::red));
+    convertscene->addRect(lut->mid-(MID_VALUE_RECTANGLE_SIZE/2),(CONVERT_HEIGHT/2)-(MID_VALUE_RECTANGLE_SIZE/2),MID_VALUE_RECTANGLE_SIZE,MID_VALUE_RECTANGLE_SIZE,QPen(Qt::red),QBrush(Qt::red));
 
-  ConvertGraphicsView->update();
+    ConvertGraphicsView->update();
 }
-
-
-

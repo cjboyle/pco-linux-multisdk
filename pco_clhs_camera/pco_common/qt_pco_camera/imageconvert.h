@@ -39,7 +39,6 @@
 #define CONVERT_WIDTH 65536
 #define CONVERT_HEIGHT_ADJUST 3
 
-
 class ImageConvert : public QDialog, public Ui::ImageConvert
 {
   Q_OBJECT

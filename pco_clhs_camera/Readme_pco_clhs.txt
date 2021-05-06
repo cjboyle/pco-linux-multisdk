@@ -28,7 +28,7 @@ The pco_clhs_info application could also be used to enable and disable distinct 
 
 VERSION 1
 SUBVERSION 2
-SUBAGE 6
+SUBAGE 4
 LNX 64
 
 CONTENTS:
@@ -39,9 +39,9 @@ Installation Instructions:
 
 Install driver and runtime from Silicon Software and check functionality of me5 board.
 This PCO package does need the following packages from Silicon Software
-runtime version:  siso-rt5-5.7.0.76321-linux-amd64
-driver version:   menable_linuxdrv_src_4.2.6
-applet version:   setup-mE5-MA-AF2-Applets-5.7.0-linux-amd64
+runtime version:  siso-rt5-5.4.4-linux-amd64
+driver version:   menable_linuxdrv_src_4.1.8
+applet version:   setup-mE5-MA-AF2-Applets-5.4.4-linux-amd64
 
 The following applet must be flashed to the board
 applet used:      libAcq_DualCLHSx1AreaRAW
@@ -130,23 +130,13 @@ executable binaries linked to static libraries
 executable binaries linked to dynamic libraries
 
 SYSTEM_VERSION:
-This package was successfully tested in a Debian 10 system with kernel 4.19
+This package was successfully tested in a Debian 7.8 system with kernel 3.19
 with the following driver and runtime versions from Silicon Software
- menable_linuxdrv_src_4.2.6 
- siso-rt5-5.7.0-linux-amd64
+ menable_linuxdrv_src_4.1.8 
+ siso-rt5-5.4.4-linux-amd64
  
 
 VERSION HISTORY:
-ver01_02_06
-Bugfix:
- pcoclhs library images are lost, when acquire is done with high system load
-
-
-ver01_02_05
-Bugfix:
- pco_clhs_mgr semaphore handling
- pcoclhs library acquire_status timeout
-
 ver01_02_04
 changes in symlink_pco and main Makefile
 changes in some of the testprograms
