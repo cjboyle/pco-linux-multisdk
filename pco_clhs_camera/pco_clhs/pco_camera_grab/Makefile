@@ -40,11 +40,11 @@ copy:
 		$(CXX) $(CFLAGS) -c $< -o $@
 
 pco_%:		pco_%.cpp $(CAMLIB) $(HEADERS) 
-		$(CXX) $(CFLAGS) $@.cpp -o $@ $(LFLAGS) $(LIBADD) $(PCOLIB)
-		$(CXX) $(CFLAGS) -rdynamic -L../bindyn $@.cpp -o ../bindyn/$@  $(LIBADD) $(PCOLIB)
+		$(CXX) $(CFLAGS) $@.cpp -o $@ $(LFLAGS) $(PCOLIB) $(LIBADD)
+		$(CXX) $(CFLAGS) -rdynamic -L../bindyn $@.cpp -o ../bindyn/$@  $(PCOLIB) $(LIBADD)
 
 
 pcox_%:		pcox_%.cpp $(CAMLIB) $(HEADERS) 
-		$(CXX) $(CFLAGS) $@.cpp -o $@ $(LFLAGS) $(LIBADDX) $(PCOLIBX) 
-		$(CXX) $(CFLAGS) -rdynamic -L../bindyn $@.cpp -o ../bindyn/$@  $(LIBADDX) $(PCOLIBX)
+		$(CXX) $(CFLAGS) $@.cpp -o $@ $(LFLAGS) $(PCOLIBX) $(LIBADDX)
+		$(CXX) $(CFLAGS) -rdynamic -L../bindyn $@.cpp -o ../bindyn/$@  $(PCOLIBX) $(LIBADDX)
 

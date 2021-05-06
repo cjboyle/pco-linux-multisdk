@@ -59,17 +59,63 @@
 int main(int argc, char *argv[])
 {
   int ret;
-  CPco_Log *Clog;
+  int help=0;
 
-  Clog=new CPco_Log(LOGNAME);
-  Clog->set_logbits(0x0000F0FF);
+  CPco_Log *mylog=NULL;
+
+  for(int i=argc;i>1;)
+  {
+   char *a;
+
+   i--;
+
+   if(strstr(argv[i],"-h"))
+    help=1;
+   if(strstr(argv[i],"-?"))
+    help=1;
+   if(strstr(argv[i],"?"))
+    help=1;
+/*
+   if((a=strstr(argv[i],"-b")))
+   {
+    board=atoi(a+2);
+   }
+
+*/
+   if((a=strstr(argv[i],"-l")))
+   {
+    unsigned int x=strtol(a+2,NULL,0);
+    printf("Logging to '%s' enabled, ",LOGNAME);
+    mylog=new CPco_Log(LOGNAME);
+    if(x>0)
+    {
+     x|=0x03;
+     mylog->set_logbits(x);
+    }
+    printf("logbits set to 0x%x\n",mylog->get_logbits());
+   }
+  }
+
+  if(help)
+  {
+   printf("usage: %s options\n"
+          "options: \n"
+          "-l[0...]  enable logging, set loglevel\n"
+          "-h,-?,? this message\n",argv[0]);
+
+   if(mylog)
+    delete mylog;
+   return 0;
+  }
+
 
   QApplication a(argc, argv);
-  qt_pco_camera w(Clog);
+  qt_pco_camera w(mylog);
   w.show();
   ret=a.exec();
 
-  delete Clog;
+  if(mylog)
+   delete mylog;
   return ret;
 }
 

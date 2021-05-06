@@ -45,6 +45,12 @@
 
 #include "qt_pco_camera.h"
 
+
+#ifdef NOPCOCNVLIB
+extern void lincnv_convert_set(BWLUT *lut,int convertmin,int convertmax);
+#endif
+
+
 /* GLOBALS */
 GrabThreadWorker* grabthreadworker;
 LiveThreadWorker* livethreadworker;
@@ -64,14 +70,14 @@ qt_pco_camera::qt_pco_camera( CPco_Log* Clog,CPco_camera* camera,CPco_grabber* g
     liveview_isrunning = 0;
     board = 0;
     doubleimagemode = 0;
-    convertmin = 0;
+    convertmin = 100;
     convertmax = 15000;
     convertgamma = 1;
+    lut = NULL;
     single_image = NULL;
     current_image_buffer = NULL;
     current_image_converted = NULL;
     err = PCO_NOERROR;
-    lut = NULL;
     ImageTimeout=5000;
 
     //Set Title
@@ -129,14 +135,22 @@ qt_pco_camera::~qt_pco_camera()
     FreeImageVector();
 
     if(single_image)
-        free(single_image);
+     free(single_image);
 
     if(current_image_converted)
-        free(current_image_converted);
+     free(current_image_converted);
 
-    if(lut) {
-      pcocnv_delete_bwlut(lut);
+
+#ifndef NOPCOCNVLIB
+    if(lut)
+     pcocnv_delete_bwlut(lut);
+#else
+    if(lut)
+    {
+     free(lut->ptr);
+     delete lut;
     }
+#endif
 
     if(grabber)
     {
@@ -257,6 +271,10 @@ void qt_pco_camera::on_OpenCameraButton_clicked()
     {
      grabber=new CPco_grab_usb((CPco_com_usb*)camera);
     }
+    else if(Interfacetype==INTERFACE_USB31_GEN1)
+    {
+     grabber=new CPco_grab_usb((CPco_com_usb*)camera);
+    }
 #endif
 
 #ifdef CPCO_GRAB_1394_H
@@ -348,8 +366,26 @@ void qt_pco_camera::on_OpenCameraButton_clicked()
      }
     }
 
+
+#ifndef NOPCOCNVLIB
     //create lookuptable for image conversion
     lut = pcocnv_create_bwlut(bitpix, 0, 255);
+#else
+    lut = new BWLUT;
+    lut->align=0;
+    lut->bitpix=bitpix;
+    lut->dgamma=1.0;
+
+    lut->min=0;
+    lut->max=(1<<bitpix)-1;
+    lut->typ=0;
+    lut->min_out=0;
+    lut->max_out=255;
+    lut->size=1<<bitpix;
+
+    lut->ptr=NULL;
+    lut->ptr=malloc(lut->size);
+#endif
 
     if (err == PCO_NOERROR)
     {
@@ -415,7 +451,8 @@ void qt_pco_camera::on_GetDescriptionButton_clicked()
 void qt_pco_camera::on_SetupCameraButton_clicked()
 {
     err = camera->PCO_GetRecordingState(&act_recstate);
-    if (err != PCO_NOERROR) {
+    if (err != PCO_NOERROR)
+    {
         errorwindow->SetError("Get Recstate failed.", err);
         errorwindow->exec();
     }
@@ -427,47 +464,57 @@ void qt_pco_camera::on_SetupCameraButton_clicked()
         dialog->deleteLater();
         return;
     }
+
     CameraSetup *setup = new CameraSetup(camera,grabber,this);
     setup->setModal(true);
     setup->exec();
     setup->deleteLater();
     //setup closed, reaquire settings for the grabber
+
     err = camera->PCO_GetActualSize(&cam_width, &cam_height);
-    if (err != PCO_NOERROR) {
+    if (err != PCO_NOERROR)
+    {
         errorwindow->SetError("Get Actual Size failed.", err);
         errorwindow->exec();
         return;
     }
+
     err = camera->PCO_GetDoubleImageMode(&doubleimagemode);
     picsize = cam_width*cam_height*((bitpix + 7) / 8);
-    if (doubleimagemode) {
+    if (doubleimagemode)
+    {
         picsize *= 2;
         cam_height *= 2;
     }
 
     //reassign memory
     if(single_image)
-        free(single_image);
-    single_image = (unsigned short*)calloc(1, picsize);
-    if (!single_image) {
+     free(single_image);
+    single_image = (unsigned short*)malloc(picsize);
+    if (!single_image)
+    {
         errorwindow->SetError("Error assigning memory");
         errorwindow->exec();
         return;
     }
+
     if(current_image_converted)
-        free(current_image_converted);
+     free(current_image_converted);
     current_image_converted = (unsigned char*)malloc(picsize * 3);
-    if(!current_image_converted) {
+    if(!current_image_converted)
+    {
         errorwindow->SetError("Error assigning memory");
         errorwindow->exec();
         return;
     }
+
     //invalidate recorder memory
     images_available = 0;
     FreeImageVector();
 
     err = grabber->Set_Grabber_Size(cam_width, cam_height);
-    if (err != PCO_NOERROR) {
+    if (err != PCO_NOERROR)
+    {
         errorwindow->SetError("Set Grabber size failed.", err);
         errorwindow->exec();
         return;
@@ -494,11 +541,11 @@ void qt_pco_camera::on_StartCameraButton_clicked()
         errorwindow->exec();
         return;
     }
-    //assign memory for current image and set conversion lut
+    //assign memory for current image
     if(current_image_converted)
-        free(current_image_converted);
+     free(current_image_converted);
     current_image_converted = (unsigned char*)malloc(picsize * 3);
-    pcocnv_convert_set_ex(lut, convertmin, convertmax, 1, convertgamma); //set a default conversion
+
     //enable grab buttons
     SetImageGrabButtonStatus(TRUE);
     ui.StartCameraButton->setText("Stop Camera");
@@ -510,13 +557,13 @@ void qt_pco_camera::on_GrabImageButton_clicked()
     //allocate memory for current picture
     if (!single_image)
     {
-        single_image = (unsigned short*)calloc(1, picsize);
-        if (!single_image)
-        {
-            errorwindow->SetError("Error assigning memory");
-            errorwindow->exec();
-            return;
-        }
+     single_image = (unsigned short*)malloc(picsize);
+     if (!single_image)
+     {
+      errorwindow->SetError("Error assigning memory");
+      errorwindow->exec();
+      return;
+     }
     }
     current_image_buffer = single_image;
     WORD mode;
@@ -797,6 +844,7 @@ void qt_pco_camera::on_OpenConvertDialogButton_clicked()
         errorwindow->SetError("No picture found.");
         errorwindow->exec();
     }
+
     if(current_image_converted != NULL)
     {
         switch(created)
@@ -833,44 +881,53 @@ void qt_pco_camera::on_OpenConvertDialogButton_clicked()
 
 void qt_pco_camera::on_AutoRangeButton_clicked()
 {
-    if (current_image_converted == NULL) {
+    if (current_image_converted == NULL)
+    {
         errorwindow->SetError("No picture found.");
         errorwindow->exec();
     }
 
     if (current_image_converted != NULL)
     {
-        DWORD x,y;
-        convertmax = 0;
-        convertmin = 65535;
+     DWORD x,y;
+     convertmax = 0;
+     convertmin = 65535;
 
-        WORD* pw = (WORD*)current_image_buffer;
+     WORD* pw = (WORD*)current_image_buffer;
 
 //discard first 10 lines with timestamp and last 10 lines
-        for (y = 10; y < cam_height-10; y++)
-        {
-            pw=(WORD*)current_image_buffer;
-            pw+=y*cam_width;
+     for (y = 10; y < cam_height-10; y++)
+     {
+      pw=(WORD*)current_image_buffer;
+      pw+=y*cam_width;
 
-            for(x=0;x<cam_width;x++)
-            {
-             if (*pw > convertmax)
-                convertmax = *pw;
-             if (*pw < convertmin)
-                 convertmin = *pw;
-             pw++;
-            }
-        }
+      for(x=0;x<cam_width;x++)
+      {
+       if (*pw > convertmax)
+        convertmax = *pw;
+       if (*pw < convertmin)
+        convertmin = *pw;
+       pw++;
+      }
+     }
 
-        if (convertmax<10)
-            convertmax = 10;
+     if(convertmax<10)
+      convertmax = 10;
 
-        if (convertmin >= convertmax)
-            convertmin = convertmax - 1;
+     if(convertmin >= convertmax)
+      convertmin = convertmax - 1;
 
-        pcocnv_convert_set(lut, convertmin, convertmax, 1);
-        emit autorange_clicked(convertmin,convertmax);
-        DisplayCurrentImage();
+     if(convertmax>lut->size-1)
+      convertmax=lut->size-1;
+
+#ifndef NOPCOCNVLIB
+     pcocnv_convert_set(lut, convertmin, convertmax, 1);
+#else
+     lincnv_convert_set(lut,convertmin,convertmax);
+#endif
+
+     emit autorange_clicked(convertmin,convertmax);
+     DisplayCurrentImage();
     }
 
 }
@@ -1035,8 +1092,41 @@ void qt_pco_camera::DisplayCurrentImage()
 {
     //clear scene
     scene->clear();
+
+#ifndef NOPCOCNVLIB
     //convert image
     pcocnv_conv_buf_12to24(0, cam_width, cam_height, current_image_buffer, current_image_converted, lut);
+#else
+    unsigned char *linlut=(unsigned char*)lut->ptr;
+    DWORD ifil,w,h,w3;
+    unsigned char a;
+
+    WORD* b16=(WORD*)current_image_buffer;
+    BYTE* b8 =(BYTE*)current_image_converted;
+
+    w3=cam_width*3;
+    ifil = w3 % 4;
+    if(ifil != 0)
+     ifil = 4 - ifil;
+
+    for(h=0;h<cam_height;h++)
+    {
+     for(w=0;w<cam_width;w++)
+     {
+      if(*b16>lut->size)
+       a=255;
+      else
+       a=*(linlut+*b16);
+      *b8++=a;
+      *b8++=a;
+      *b8++=a;
+      b16++;
+     }
+     for(w=0;w<ifil;w++)
+      *b8++=0;
+    }
+#endif
+
     //and display it
     pcoimage = QImage(current_image_converted, cam_width, cam_height, QImage::Format_RGB888);
 
@@ -1271,7 +1361,7 @@ DWORD qt_pco_camera::SetInitialValues()
     }
 
     //allocate memory for current picture
-    single_image = (unsigned short*)calloc(1, picsize);
+    single_image = (unsigned short*)malloc(picsize);
     current_image_buffer = single_image;
 
     if (err != PCO_NOERROR)
@@ -1332,7 +1422,6 @@ DWORD qt_pco_camera::SetInitialValues()
 
      }
 
-
      err = grabber->Allocate_Framebuffer(5);
      if(err != PCO_NOERROR)
      {
@@ -1341,6 +1430,16 @@ DWORD qt_pco_camera::SetInitialValues()
      }
     }
 
-    return err;
+//set a default conversion
+    if(lut)
+    {
+#ifndef NOPCOCNVLIB
+     pcocnv_convert_set_ex(lut, convertmin, convertmax, 1, convertgamma); 
+#else
+     lincnv_convert_set(lut,convertmin,convertmax);
+#endif
+
+   }
+   return err;
 }
 

@@ -15,7 +15,7 @@ CAMLIB    = $(PCOLIBDIR)/libpcocam_clhs.a
 
 HEADERS = $(CPCODIRCLHS)/VersionNo.h $(CPCODIR)/Cpco_com.h $(CPCODIRCLHS)/Cpco_com_clhs.h
 
-PCOLIB  = -lpcolog  -lpcofile -lpcocom_clhs -lpcoclhs
+PCOLIB  = -lpcofile -lpcocom_clhs -lpcoclhs -lpcolog
 PCOLIBX = -lpcodisp -lpcofile -lpcocom_clhs -lpcoclhs
 
 LIBADD  = -lpthread -lrt -ldl
@@ -38,8 +38,8 @@ copy:
 
 
 pco_%:		pco_%.cpp $(PCOCOMLIB) $(HEADERS)
-		$(CXX) $(CFLAGS) $@.cpp -o $@ $(LFLAGS) $(LIBADD) $(PCOLIB)
-		$(CXX) $(CFLAGS) -rdynamic -L../bindyn $@.cpp -o ../bindyn/$@  $(LIBADD) $(PCOLIB)
+		$(CXX) $(CFLAGS) $@.cpp -o $@ $(LFLAGS) $(PCOLIB) $(LIBADD)
+		$(CXX) $(CFLAGS) -rdynamic -L../bindyn $@.cpp -o ../bindyn/$@ $(PCOLIB) $(LIBADD)
 
 
 

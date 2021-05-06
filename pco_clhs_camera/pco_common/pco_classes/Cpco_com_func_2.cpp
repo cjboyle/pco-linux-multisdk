@@ -152,7 +152,7 @@ DWORD CPco_com::PCO_SetActiveRamSegment(WORD wActSeg)
     return err;
 }
 
-DWORD CPco_com::PCO_ClearRamSegment(void)
+DWORD CPco_com::PCO_ClearRamSegment()
 {
     SC2_Simple_Telegram com;
     SC2_Clear_RAM_Segment_Response resp;
@@ -249,7 +249,7 @@ DWORD CPco_com::PCO_RequestImage()
 }
 
 
-DWORD CPco_com::PCO_RepeatImage(void)
+DWORD CPco_com::PCO_RepeatImage()
 {
     SC2_Repeat_Image com;
     SC2_Repeat_Image_Response resp;
@@ -267,7 +267,7 @@ DWORD CPco_com::PCO_RepeatImage(void)
 }
 
 
-DWORD CPco_com::PCO_CancelImageTransfer(void)
+DWORD CPco_com::PCO_CancelImageTransfer()
 {
     SC2_Cancel_Image_Transfer com;
     SC2_Cancel_Image_Transfer_Response resp;
@@ -285,11 +285,12 @@ DWORD CPco_com::PCO_CancelImageTransfer(void)
 DWORD CPco_com::PCO_CancelImage()
 {
     DWORD err;
-    SC2_Simple_Telegram com;
+    SC2_Cancel_Image_Transfer com;
     SC2_Cancel_Image_Transfer_Response resp;
 
     com.wCode=CANCEL_IMAGE_TRANSFER;
-    com.wSize=sizeof(SC2_Simple_Telegram);
+    com.Reserved=0;
+    com.wSize=sizeof(com);
 
     err=Control_Command(&com,sizeof(com),
                         &resp,sizeof(resp));
@@ -1296,43 +1297,64 @@ DWORD CPco_com::PCO_SetCameraSynchMode(WORD wCameraSynchMode)
 
 DWORD CPco_com::PCO_GetCMOSLinetiming(WORD* wParameter,WORD* wTimebase,DWORD* dwLineTime)
 {
-    SC2_Get_CMOS_Line_Timing com;
-    SC2_Get_CMOS_Line_Timing_Response resp;
-    DWORD err=PCO_NOERROR;
+  SC2_Get_CMOS_Line_Timing com;
+  SC2_Get_CMOS_Line_Timing_Response resp;
+  DWORD err=PCO_NOERROR;
 
-    com.wCode=GET_CMOS_LINETIMING;
-    com.wSize=sizeof(com);
+  com.wCode=GET_CMOS_LINETIMING;
+  com.wSize=sizeof(com);
 
-    err=Control_Command(&com,sizeof(com),&resp,sizeof(resp));
+  err=Control_Command(&com,sizeof(com),&resp,sizeof(resp));
 
-    if(err==PCO_NOERROR) {
-        *wParameter=resp.wParameter;
-        *wTimebase=resp.wTimebase;
-        *dwLineTime=resp.dwLineTime;
-    }
-    return err;
-
+  if(err==PCO_NOERROR)
+  {
+   *wParameter=resp.wParameter;
+   *wTimebase=resp.wTimebase;
+   *dwLineTime=resp.dwLineTime;
+  }
+  return err;
 }
+
+DWORD CPco_com::PCO_GetCMOSLinetiming_res(DWORD *dwMinLineTime,DWORD *dwMaxLineTime, DWORD *dwLineCaps)
+{
+  SC2_Get_CMOS_Line_Timing com;
+  SC2_Get_CMOS_Line_Timing_Response resp;
+  DWORD err=PCO_NOERROR;
+
+  com.wCode=GET_CMOS_LINETIMING;
+  com.wSize=sizeof(com);
+
+  err=Control_Command(&com,sizeof(com),&resp,sizeof(resp));
+
+  if(err==PCO_NOERROR)
+  {
+   *dwMinLineTime=resp.dwMinLineTime;
+   *dwMaxLineTime=resp.dwMaxLineTime;
+   *dwLineCaps=resp.dwLineCaps;
+  }
+  return err;
+}
+
 
 DWORD CPco_com::PCO_SetCMOSLinetiming(WORD wParameter,WORD wTimebase,DWORD dwLineTime)
 {
-    SC2_Set_CMOS_Line_Timing com;
-    SC2_Set_CMOS_Line_Timing_Response resp;
-    DWORD err=PCO_NOERROR;
+  SC2_Set_CMOS_Line_Timing com;
+  SC2_Set_CMOS_Line_Timing_Response resp;
+  DWORD err=PCO_NOERROR;
 
-    com.wCode=SET_CMOS_LINETIMING;
-    com.wParameter=wParameter;
-    com.wTimebase=wTimebase;
-    com.dwLineTime=dwLineTime;
-    com.dwReserved[0]=0;
-    com.dwReserved[1]=0;
-    com.dwReserved[2]=0;
-    com.dwReserved[3]=0;
-    com.wSize=sizeof(com);
+  com.wCode=SET_CMOS_LINETIMING;
+  com.wParameter=wParameter;
+  com.wTimebase=wTimebase;
+  com.dwLineTime=dwLineTime;
+  com.dwMinLineTime=0;
+  com.dwMaxLineTime=0;
+  com.dwLineCaps=0;
+  com.dwReserved[0]=0;
+  com.wSize=sizeof(com);
 
-    err=Control_Command(&com,sizeof(com),&resp,sizeof(resp));
+  err=Control_Command(&com,sizeof(com),&resp,sizeof(resp));
 
-    return err;
+  return err;
 }
 
 DWORD CPco_com::PCO_GetCMOSLineExposureDelay(DWORD* dwExposureLines,DWORD* dwDelayLines)
@@ -1346,9 +1368,10 @@ DWORD CPco_com::PCO_GetCMOSLineExposureDelay(DWORD* dwExposureLines,DWORD* dwDel
 
     err=Control_Command(&com,sizeof(com),&resp,sizeof(resp));
 
-    if(err==PCO_NOERROR) {
-        *dwExposureLines=resp.dwExposureLines;
-        *dwDelayLines=resp.dwDelayLines;
+    if(err==PCO_NOERROR)
+    {
+     *dwExposureLines=resp.dwExposureLines;
+     *dwDelayLines=resp.dwDelayLines;
     }
     return err;
 }
@@ -2535,6 +2558,115 @@ DWORD CPco_com::PCO_SetFlimRelativePhase(DWORD dwPhaseMilliDeg)
     err=Control_Command(&com,sizeof(com),&resp,sizeof(resp));
 
     return err;
+}
+
+/////////////////////////////////////////////////////////////////////
+// pco.C1 Commands 
+/////////////////////////////////////////////////////////////////////
+
+DWORD CPco_com::PCO_GetIntensifiedGatingMode(WORD* wGatingMode)
+{
+  SC2_Get_Intensified_Gating_Mode com;
+  SC2_Get_Intensified_Gating_Mode_Response resp;
+  DWORD err=PCO_NOERROR;
+  
+  com.wCode=GET_INTENSIFIED_GATING_MODE;
+  com.wSize=sizeof(com);
+
+  err=Control_Command(&com,sizeof(com),&resp,sizeof(resp));
+
+  if(err==PCO_NOERROR)
+  {
+   *wGatingMode=resp.wMode;
+  }
+  return err;
+}
+
+DWORD CPco_com::PCO_SetIntensifiedGatingMode(WORD wGatingMode)
+{
+  SC2_Set_Intensified_Gating_Mode com;
+  SC2_Get_Intensified_Gating_Mode_Response resp;
+  DWORD err=PCO_NOERROR;
+  
+  com.wCode=SET_INTENSIFIED_GATING_MODE;
+  com.wSize=sizeof(com);
+  com.wMode=wGatingMode;
+  com.wRsrvd=0;                  
+  
+  err=Control_Command(&com,sizeof(com),&resp,sizeof(resp));
+
+  return err;
+}
+
+DWORD CPco_com::PCO_GetIntensifiedMCP(WORD* wIntensifiedVoltage,DWORD* dwIntensifiedPhosphorDecay_us)
+{
+  SC2_Get_Intensified_MCP com;
+  SC2_Get_Intensified_MCP_Response resp;
+  DWORD err=PCO_NOERROR;
+
+  com.wCode=GET_INTENSIFIED_MCP;
+  com.wSize=sizeof(com);
+
+  err=Control_Command(&com,sizeof(com),&resp,sizeof(resp));
+  if(err==PCO_NOERROR)
+  {
+   *wIntensifiedVoltage=resp.wIntensifiedVoltage;
+   *dwIntensifiedPhosphorDecay_us=resp.dwIntensifiedPhosphorDecay_us;
+  }
+
+  return err;
+}
+
+DWORD CPco_com::PCO_SetIntensifiedMCP(WORD wIntensifiedVoltage,DWORD dwIntensifiedPhosphorDecay_us)
+{
+  SC2_Set_Intensified_MCP com;
+  SC2_Get_Intensified_MCP_Response resp;
+  DWORD err=PCO_NOERROR;
+
+  com.wCode=SET_INTENSIFIED_MCP;
+  com.wSize=sizeof(com);
+  com.wIntensifiedVoltage=resp.wIntensifiedVoltage;
+  com.wRsrvd=0;
+  com.dwIntensifiedPhosphorDecay_us=resp.dwIntensifiedPhosphorDecay_us;
+  com.dwRsrvd1=0;
+  com.dwRsrvd2=0;
+
+  err=Control_Command(&com,sizeof(com),&resp,sizeof(resp));
+
+  return err;
+}
+
+DWORD CPco_com::PCO_GetIntensifiedLoopCount(WORD* wCount)
+{
+  SC2_Get_Intensified_Loop_Count com;
+  SC2_Get_Intensified_Loop_Count_Response resp;
+  DWORD err=PCO_NOERROR;
+
+  com.wCode=GET_INTENSIFIED_LOOP_COUNT;
+  com.wSize=sizeof(com);
+
+  err=Control_Command(&com,sizeof(com),&resp,sizeof(resp));
+  if(err==PCO_NOERROR)
+  {
+   *wCount=resp.wCount;
+  }
+
+  return err;
+}
+
+DWORD CPco_com::PCO_SetIntensifiedLoopCount(WORD wCount)
+{
+  SC2_Set_Intensified_Loop_Count com;
+  SC2_Get_Intensified_Loop_Count_Response resp;
+  DWORD err=PCO_NOERROR;
+
+  com.wCode=SET_INTENSIFIED_LOOP_COUNT;
+  com.wSize=sizeof(com);
+  com.wCount=wCount; 
+  com.wRsrvd=0;
+  err=Control_Command(&com,sizeof(com),&resp,sizeof(resp));
+
+  return err;
 }
 
 
