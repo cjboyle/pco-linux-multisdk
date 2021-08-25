@@ -4,6 +4,8 @@ if [ -z "$PCODIR" ]; then
     export PCODIR="/opt/PCO"
 fi
 
+export LD_PRELOAD="${PCODIR}/pcome4_overrides.so:${LD_PRELOAD}"
+
 # echo "[INFO ] Loading environment for ${DIR}"
 
 # echo "[INFO ] Prepending '${DIR}/bin' to PATH"
